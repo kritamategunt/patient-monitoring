@@ -16,8 +16,8 @@ Socket.IO
 ## Run locally
 
 pnpm install
-pnpm run dev
+pnpm run dev OR pnpm dev
 
-Run socket server
+pnpm socket
 
 node socket-server/server.js

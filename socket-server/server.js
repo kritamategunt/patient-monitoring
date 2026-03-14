@@ -1,38 +1,58 @@
 const { Server } = require("socket.io");
 
 const io = new Server(3001, {
-  cors: {
-    origin: "*"
-  }
+  cors: { origin: "*" },
 });
 
-let patientData = {};
-let status = "inactive";
+let activePatients = {};
+let submittedPatients = [];
 
 io.on("connection", (socket) => {
+  console.log("patient connected", socket.id);
 
-  console.log("Client connected");
-
-  socket.emit("update", { patientData, status });
-
-  socket.on("patientUpdate", (data) => {
-    patientData = data;
-    status = "active";
-
-    io.emit("update", { patientData, status });
+  socket.emit("update", {
+    activePatients: Object.values(activePatients),
+    submittedPatients,
   });
 
-  socket.on("submit", () => {
-    status = "submitted";
-    io.emit("update", { patientData, status });
+  socket.on("patientUpdate", (data) => {
+    console.log("patientUpdate received", data);
+    activePatients[socket.id] = {
+      id: socket.id,
+      ...data,
+      status: "typing",
+      updatedAt: new Date(),
+    };
+
+    io.emit("update", {
+      activePatients: Object.values(activePatients),
+      submittedPatients,
+    });
+  });
+
+  socket.on("submit", (data) => {
+    const patient = {
+      id: Date.now(),
+      ...data,
+      submittedAt: new Date(),
+    };
+
+    submittedPatients.push(patient);
+
+    delete activePatients[socket.id];
+
+    io.emit("update", {
+      activePatients: Object.values(activePatients),
+      submittedPatients,
+    });
   });
 
   socket.on("disconnect", () => {
-    console.log("Client disconnected");
-    status = "inactive";
-    io.emit("update", { patientData, status });
+    delete activePatients[socket.id];
+
+    io.emit("update", {
+      activePatients: Object.values(activePatients),
+      submittedPatients,
+    });
   });
-
 });
-
-console.log("Socket server running on port 3001");
