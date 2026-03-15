@@ -1,22 +1,30 @@
-const { Server } = require("socket.io");
 
 const http = require("http");
 const { Server } = require("socket.io");
 
 const PORT = process.env.PORT || 3001;
 
-const server = http.createServer();
+const server = http.createServer((req, res) => {
+  res.writeHead(200);
+  res.end("Socket server running");
+});
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "https://patient-monitoring-phi.vercel.app",
-      "https://patient-monitoring-kritamategunts-projects.vercel.app",
-      "https://patient-monitoring-9pouy30as-kritamategunts-projects.vercel.app"
-    ],
-    methods: ["GET", "POST"]
-  }
+    origin: "*",
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("client connected:", socket.id);
+
+  socket.on("disconnect", () => {
+    console.log("client disconnected:", socket.id);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log("Server running on port", PORT);
 });
 
 server.listen(PORT, () => {
