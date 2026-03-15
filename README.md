@@ -28,12 +28,12 @@ Patients can fill in forms while staff can monitor updates live through a dashbo
 
 ```
 patient-monitoring/
-│
-├── ui/                    # Next.js frontend
-│   ├── app/
+│# Next.js frontend
+├── app/
+│   ├── patient/
+│   ├── staff/
 │   ├── components/
-│   ├── hooks/
-│   └── lib/
+│   
 │
 ├── socket-server/         # WebSocket server
 │   ├── index.js
