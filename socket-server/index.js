@@ -7,7 +7,8 @@ const io = new Server(PORT, {
     origin: [
       "http://localhost:3000",
       "https://patient-monitoring-9pouy30as-kritamategunts-projects.vercel.app",
-      "https://patient-monitoring-phi.vercel.app"
+      "https://patient-monitoring-phi.vercel.app",
+      "https://patient-monitoring-kritamategunts-projects.vercel.app"
     ],
   },
 });
