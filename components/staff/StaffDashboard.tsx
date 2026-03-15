@@ -12,9 +12,10 @@ import {
     RefreshCwIcon,
     CheckCircle2Icon,
 } from "lucide-react"
-import Link from "next/link"
 import { useEffect, useState } from "react"
-interface SubmittedPatient {
+import EditPatientModal from "./editModal"
+
+export interface SubmittedPatient {
     id: string
     firstName: string
     middleName?: string
@@ -24,6 +25,7 @@ interface SubmittedPatient {
     gender?: string
     preferredLanguage?: string
     submittedAt: string
+    status?: "Submitted" | "Updating"
 }
 
 interface ActivePatient {
@@ -66,131 +68,31 @@ function StatCard({
     )
 }
 
-const submittedColumns: ColumnsType<SubmittedPatient> = [
-    {
-        title: "Patient ID",
-        dataIndex: "id",
-        key: "id",
-        width: 140,
-        render: (id: string) => (
-            <span className="font-mono text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-md font-medium">
-                {id}
-            </span>
-        ),
-    },
-    {
-        title: "Patient Name",
-        key: "name",
-        render: (_, record) => (
-            <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-xs font-bold text-primary">
-                    {record.firstName?.[0]?.toUpperCase() || "?"}{record.lastName?.[0]?.toUpperCase() || ""}
-                </div>
-                <div>
-                    <p className="font-medium text-foreground text-sm">
-                        {record.firstName} {record.middleName ? `${record.middleName} ` : ""}{record.lastName}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{record.email}</p>
-                </div>
-            </div>
-        ),
-    },
-    {
-        title: "Contact",
-        dataIndex: "phoneNumber",
-        key: "phoneNumber",
-        responsive: ["lg" as const],
-        render: (phone: string) => (
-            <span className="text-sm text-muted-foreground font-mono">{phone}</span>
-        ),
-    },
-    {
-        title: "Gender",
-        dataIndex: "gender",
-        key: "gender",
-        responsive: ["md" as const],
-        width: 100,
-        render: (gender: string) => (
-            <Tag
-                className="!border-0 !rounded-full !px-3 !py-0.5 !text-xs !font-medium"
-                color={gender === "Male" ? "cyan" : gender === "Female" ? "magenta" : "default"}
-            >
-                {gender}
-            </Tag>
-        ),
-    },
-    {
-        title: "Language",
-        dataIndex: "preferredLanguage",
-        key: "preferredLanguage",
-        responsive: ["xl" as const],
-        width: 110,
-        render: (lang: string) => (
-            <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-1 rounded-md">
-                {lang}
-            </span>
-        ),
-    },
-    {
-        title: "Status",
-        key: "status",
-        width: 120,
-        render: () => (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
-                <CheckCircle2Icon className="w-3 h-3" />
-                Submitted
-            </span>
-        ),
-    },
-    {
-        title: "Submitted",
-        dataIndex: "submittedAt",
-        key: "submittedAt",
-        width: 130,
-        sorter: (a, b) =>
-            new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime(),
-        defaultSortOrder: "descend",
-        render: (date: string) => (
-            <Tooltip title={new Date(date).toLocaleString()}>
-                <div className="text-right">
-                    <p className="text-sm font-medium text-foreground">
-                        {new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground">
-                        {new Date(date).toLocaleDateString([], { month: "short", day: "numeric" })}
-                    </p>
-                </div>
-            </Tooltip>
-        ),
-    },
-]
+
 
 export default function StaffDashboard() {
     const socket = useSocket();
 
     const [activePatients, setActivePatients] = useState<ActivePatient[]>([]); const [now, setNow] = useState(new Date())
     const [submittedPatients, setSubmittedPatients] = useState<SubmittedPatient[]>([]);
-
+    const [editingPatient, setEditingPatient] = useState<SubmittedPatient | null>(null)
+    const [isModalOpen, setIsModalOpen] = useState(false)
     // realtime update from socket
     useEffect(() => {
+        if (!socket) return
+        socket.emit("join", "staff")
 
         const handleUpdate = (payload: any) => {
+            setActivePatients(payload.activePatients ?? [])
+            setSubmittedPatients(payload.submittedPatients ?? [])
+        }
 
-            setActivePatients(payload.activePatients ?? []);
-
-            if (payload.submittedPatients) {
-                setSubmittedPatients(payload.submittedPatients);
-            }
-
-        };
-
-        socket.on("update", handleUpdate);
+        socket.on("update", handleUpdate)
 
         return () => {
-            socket.off("update", handleUpdate);
-        };
-
-    }, [socket]);
+            socket.off("update", handleUpdate)
+        }
+    }, [socket])
 
     // live clock refresh
     useEffect(() => {
@@ -198,12 +100,173 @@ export default function StaffDashboard() {
         return () => clearInterval(t);
     }, []);
 
-    function timeSince(iso: string) {
-        const diff = Math.floor((now.getTime() - new Date(iso).getTime()) / 1000)
+    function timeSince(iso?: string | Date) {
+        if (!iso) return "just now"
+
+        const time = new Date(iso).getTime()
+
+        if (isNaN(time)) return "just now"
+
+        const diff = Math.floor((Date.now() - time) / 1000)
+
         if (diff < 60) return `${diff}s ago`
         if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
         return `${Math.floor(diff / 3600)}h ago`
     }
+
+    const openEdit = (patient: SubmittedPatient) => {
+        setEditingPatient(patient)
+        setIsModalOpen(true)
+    }
+
+    const closeEdit = () => {
+        setEditingPatient(null)
+        setIsModalOpen(false)
+    }
+
+    const handleSave = (values: Partial<SubmittedPatient>) => {
+        if (!editingPatient) return
+
+        const updatedPatient: SubmittedPatient = {
+            ...editingPatient,
+            ...values,
+            status: "Updating",
+        }
+
+        setSubmittedPatients((prev) =>
+            prev.map((p) => (p.id === updatedPatient.id ? updatedPatient : p))
+        )
+
+        socket.emit("editPatient", updatedPatient)
+
+        closeEdit()
+    }
+
+    const submittedColumns: ColumnsType<SubmittedPatient> = [
+        {
+            title: "Patient ID",
+            dataIndex: "id",
+            key: "id",
+            width: 140,
+            render: (id: string) => (
+                <span className="font-mono text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-md font-medium">
+                    {id}
+                </span>
+            ),
+        },
+        {
+            title: "Patient Name",
+            key: "name",
+            render: (_, record) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-xs font-bold text-primary">
+                        {record.firstName?.[0]?.toUpperCase() || "?"}{record.lastName?.[0]?.toUpperCase() || ""}
+                    </div>
+                    <div>
+                        <p className="font-medium text-foreground text-sm">
+                            {record.firstName} {record.middleName ? `${record.middleName} ` : ""}{record.lastName}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{record.email}</p>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            title: "Contact",
+            dataIndex: "phoneNumber",
+            key: "phoneNumber",
+            responsive: ["lg" as const],
+            render: (phone: string) => (
+                <span className="text-sm text-muted-foreground font-mono">{phone}</span>
+            ),
+        },
+        {
+            title: "Gender",
+            dataIndex: "gender",
+            key: "gender",
+            responsive: ["md" as const],
+            width: 100,
+            render: (gender: string) => (
+                <Tag
+                    className="!border-0 !rounded-full !px-3 !py-0.5 !text-xs !font-medium"
+                    color={gender === "Male" ? "cyan" : gender === "Female" ? "magenta" : "default"}
+                >
+                    {gender}
+                </Tag>
+            ),
+        },
+        {
+            title: "Language",
+            dataIndex: "preferredLanguage",
+            key: "preferredLanguage",
+            responsive: ["xl" as const],
+            width: 110,
+            render: (lang: string) => (
+                <span className="text-xs bg-secondary text-secondary-foreground px-2.5 py-1 rounded-md">
+                    {lang}
+                </span>
+            ),
+        },
+        {
+            title: "Status",
+            dataIndex: "status",
+            key: "status",
+            width: 140,
+            render: (status: string) => {
+                if (status === "Updating") {
+                    return (
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-yellow-700 bg-yellow-50 border border-yellow-100 px-2.5 py-1 rounded-full">
+                            Updating
+                        </span>
+                    )
+                }
+
+                return (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-full">
+                        <CheckCircle2Icon className="w-3 h-3" />
+                        Submitted
+                    </span>
+                )
+            },
+        },
+        {
+            title: "Submitted",
+            dataIndex: "submittedAt",
+            key: "submittedAt",
+            width: 130,
+            sorter: (a, b) =>
+                new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime(),
+            defaultSortOrder: "descend",
+            render: (date: string) => (
+                <Tooltip title={new Date(date).toLocaleString()}>
+                    <div className="text-right">
+                        <p className="text-sm font-medium text-foreground">
+                            {new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">
+                            {new Date(date).toLocaleDateString([], { month: "short", day: "numeric" })}
+                        </p>
+                    </div>
+                </Tooltip>
+            ),
+        },
+        {
+            title: "Action",
+            key: "action",
+            width: 120,
+            render: (_, record) => (
+                <div className="flex gap-2">
+                    <Button
+                        size="small"
+                        type="primary"
+                        onClick={() => openEdit(record)}
+                    >
+                        Edit
+                    </Button>
+                </div>
+            ),
+        }
+    ]
 
     return (
         <div className="min-h-screen bg-[#FFFFFF]">
@@ -220,7 +283,7 @@ export default function StaffDashboard() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                       
+
                         <Button type="default" size="small" className="flex items-center gap-1" href="/patient">
                             <ArrowLeftIcon className="w-4 h-4" />
                             Registration Form
@@ -369,6 +432,12 @@ export default function StaffDashboard() {
                             showSizeChanger: true,
                             showTotal: (total) => `${total} patient${total !== 1 ? "s" : ""}`,
                         }}
+                    />
+                    <EditPatientModal
+                        open={isModalOpen}
+                        patient={editingPatient}
+                        onCancel={closeEdit}
+                        onSave={handleSave}
                     />
                 </section>
             </main>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { Form, Input, Button, Select, Row, Col } from "antd";
+import { Input, Button, Select, Row, Col } from "antd";
 import { Controller, useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -38,6 +38,8 @@ export default function PatientForm() {
 
     // realtime typing
     useEffect(() => {
+        socket.emit("join", "patient")
+
         const timeout = setTimeout(() => {
             socket.emit("patientUpdate", values);
         }, 300);

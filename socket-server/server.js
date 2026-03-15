@@ -5,34 +5,91 @@ const io = new Server(3001, {
 });
 
 let activePatients = {};
-let submittedPatients = [];
+let submittedPatients = {};
+let staffClients = new Set();
 
-io.on("connection", (socket) => {
-  console.log("patient connected", socket.id);
-
-  socket.emit("update", {
+function broadcastUpdate() {
+  io.emit("update", {
     activePatients: Object.values(activePatients),
     submittedPatients,
   });
+}
 
+io.on("connection", (socket) => {
+  console.log("client connected:", socket.id);
+
+  socket.on("join", (role) => {
+
+    if (role === "staff") {
+      console.log("staff connected:", socket.id);
+
+      staffClients.add(socket.id);
+
+      socket.emit("update", {
+        activePatients: Object.values(activePatients),
+        submittedPatients,
+      });
+    }
+
+    if (role === "patient") {
+      console.log("patient connected:", socket.id);
+
+      activePatients[socket.id] = {
+        ...activePatients[socket.id],
+        id: socket.id,
+        status: "connected",
+        startedAt: new Date(),
+      };
+
+      broadcastUpdate();
+    }
+  });
+
+  // patient typing form
   socket.on("patientUpdate", (data) => {
-    console.log("patientUpdate received", data);
+
+    if (!activePatients[socket.id]) return;
+
     activePatients[socket.id] = {
-      id: socket.id,
+      ...activePatients[socket.id],
       ...data,
       status: "typing",
       updatedAt: new Date(),
     };
 
-    io.emit("update", {
-      activePatients: Object.values(activePatients),
-      submittedPatients,
-    });
+    broadcastUpdate();
   });
 
+  // staff editing patient
+  socket.on("editPatient", (updatedPatient) => {
+
+    const index = submittedPatients.findIndex(
+      (p) => p.id === updatedPatient.id
+    );
+
+    if (index !== -1) {
+
+      submittedPatients[index] = {
+        ...submittedPatients[index],
+        ...updatedPatient,
+        status: "updating",
+        updatedAt: new Date(),
+      };
+
+      broadcastUpdate();
+
+      setTimeout(() => {
+        submittedPatients[index].status = "submitted";
+        broadcastUpdate();
+      }, 1000);
+    }
+  });
+
+  // patient submit form
   socket.on("submit", (data) => {
+
     const patient = {
-      id: Date.now(),
+      id: Date.now().toString(),
       ...data,
       status: "submitted",
       submittedAt: new Date(),
@@ -42,18 +99,16 @@ io.on("connection", (socket) => {
 
     delete activePatients[socket.id];
 
-    io.emit("update", {
-      activePatients: Object.values(activePatients),
-      submittedPatients,
-    });
+    broadcastUpdate();
   });
 
   socket.on("disconnect", () => {
-    delete activePatients[socket.id];
+    console.log("client disconnected:", socket.id);
 
-    io.emit("update", {
-      activePatients: Object.values(activePatients),
-      submittedPatients,
-    });
+    delete activePatients[socket.id];
+    staffClients.delete(socket.id);
+
+    broadcastUpdate();
   });
+
 });
