@@ -208,7 +208,7 @@ export default function StaffDashboard() {
     return (
         <div className="min-h-screen bg-[#FFFFFF]">
             {/* Header */}
-            <header className="bg-card border-b border-border sticky top-0 z-10 bg-teal-300/50 backdrop-blur-sm">
+            <header className="bg-card border-b border-teal-300 sticky top-0 z-10 bg-teal-300/50 backdrop-blur-sm rounded-b-2xl">
                 <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
