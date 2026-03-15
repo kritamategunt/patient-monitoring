@@ -34,6 +34,7 @@ io.on("connection", (socket) => {
     const patient = {
       id: Date.now(),
       ...data,
+      status: "submitted",
       submittedAt: new Date(),
     };
 
