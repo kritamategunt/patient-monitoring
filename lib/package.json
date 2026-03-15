@@ -1,0 +1,10 @@
+{
+  "name": "socket-server",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "socket.io": "^4"
+  }
+}

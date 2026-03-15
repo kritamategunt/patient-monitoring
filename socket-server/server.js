@@ -1,7 +1,9 @@
 const { Server } = require("socket.io");
 
 const io = new Server(3001, {
-  cors: { origin: "*" },
+  cors: {
+    origin: ["http://localhost:3000", "https://patient-monitoring-9pouy30as-kritamategunts-projects.vercel.app/"],
+  },
 });
 
 let activePatients = {};
@@ -19,7 +21,6 @@ io.on("connection", (socket) => {
   console.log("client connected:", socket.id);
 
   socket.on("join", (role) => {
-
     if (role === "staff") {
       console.log("staff connected:", socket.id);
 
@@ -47,7 +48,6 @@ io.on("connection", (socket) => {
 
   // patient typing form
   socket.on("patientUpdate", (data) => {
-
     if (!activePatients[socket.id]) return;
 
     activePatients[socket.id] = {
@@ -62,13 +62,11 @@ io.on("connection", (socket) => {
 
   // staff editing patient
   socket.on("editPatient", (updatedPatient) => {
-
     const index = submittedPatients.findIndex(
-      (p) => p.id === updatedPatient.id
+      (p) => p.id === updatedPatient.id,
     );
 
     if (index !== -1) {
-
       submittedPatients[index] = {
         ...submittedPatients[index],
         ...updatedPatient,
@@ -87,7 +85,6 @@ io.on("connection", (socket) => {
 
   // patient submit form
   socket.on("submit", (data) => {
-
     const patient = {
       id: Date.now().toString(),
       ...data,
@@ -110,5 +107,4 @@ io.on("connection", (socket) => {
 
     broadcastUpdate();
   });
-
 });
