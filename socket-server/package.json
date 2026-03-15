@@ -1,10 +1,12 @@
 {
   "name": "socket-server",
-  "type": "commonjs",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "socket.io": "^4"
+    "socket.io": "^4.7.5"
   }
 }

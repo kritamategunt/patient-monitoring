@@ -1,13 +1,18 @@
 const { Server } = require("socket.io");
 
-const io = new Server(3001, {
+const PORT = process.env.PORT || 3001;
+
+const io = new Server(PORT, {
   cors: {
-    origin: ["http://localhost:3000", "https://patient-monitoring-9pouy30as-kritamategunts-projects.vercel.app/"],
+    origin: [
+      "http://localhost:3000",
+      "https://patient-monitoring-9pouy30as-kritamategunts-projects.vercel.app",
+    ],
   },
 });
 
 let activePatients = {};
-let submittedPatients = {};
+let submittedPatients = [];
 let staffClients = new Set();
 
 function broadcastUpdate() {
@@ -62,6 +67,7 @@ io.on("connection", (socket) => {
 
   // staff editing patient
   socket.on("editPatient", (updatedPatient) => {
+    console.log("Editing patient:", updatedPatient);
     const index = submittedPatients.findIndex(
       (p) => p.id === updatedPatient.id,
     );
@@ -85,6 +91,7 @@ io.on("connection", (socket) => {
 
   // patient submit form
   socket.on("submit", (data) => {
+    console.log("Patient submitted:", data);
     const patient = {
       id: Date.now().toString(),
       ...data,
@@ -93,6 +100,7 @@ io.on("connection", (socket) => {
     };
 
     submittedPatients.push(patient);
+    console.log("Submitted patients:", submittedPatients);
 
     delete activePatients[socket.id];
 

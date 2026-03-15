@@ -48,7 +48,11 @@ export default function PatientForm() {
     }, [values, socket]);
 
     const onSubmit = async (data: PatientFormData) => {
-
+        if (!socket.connected) {
+            console.log("Socket not connected");
+            return;
+        }
+        console.log("Submitting...", data);
         socket.emit("submit", data);
 
         await Swal.fire({

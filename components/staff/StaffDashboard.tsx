@@ -315,15 +315,15 @@ export default function StaffDashboard() {
                     <StatCard
                         icon={ClipboardCheckIcon}
                         label="Total Submitted"
-                        value={submittedPatients.length}
+                        value={Array.isArray(submittedPatients) ? submittedPatients.length : 0}
                         color="bg-green-50 text-green-600"
                         sub="All time registrations" bgColor={""} />
                     <StatCard
                         icon={UsersIcon}
                         label="Today's Registrations"
-                        value={submittedPatients.filter(
+                        value={(Array.isArray(submittedPatients) ? submittedPatients : []).filter(
                             (p: { submittedAt: string | number | Date }) => new Date(p.submittedAt).toDateString() === new Date().toDateString()
-                        ).length}
+                        ).length ?? 0}
                         color="bg-teal-50 text-teal-600"
                         sub={new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" })} bgColor={""} />
                     <StatCard
@@ -409,13 +409,13 @@ export default function StaffDashboard() {
                             </div>
                         </div>
                         <span className="text-xs font-medium text-green-700 bg-green-50 border border-green-100 px-2.5 py-1 rounded-full">
-                            {submittedPatients.length} total
+                            {Array.isArray(submittedPatients) ? submittedPatients.length : 0} total
                         </span>
                     </div>
 
                     <Table<SubmittedPatient>
                         columns={submittedColumns}
-                        dataSource={submittedPatients}
+                        dataSource={Array.isArray(submittedPatients) ? submittedPatients : []}
                         rowKey="id"
                         size="small"
                         scroll={{ x: 700 }}
