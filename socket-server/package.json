@@ -1,12 +1,14 @@
 {
-  "name": "socket-server",
+  "name": "patient-socket-server",
   "version": "1.0.0",
-  "private": true,
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
     "socket.io": "^4.8.3"
-  }
+  },
+  "description": "",
+  "author": "",
+  "license": "ISC"
 }
