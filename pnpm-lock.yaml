@@ -67,6 +67,12 @@ importers:
         specifier: ^5
         version: 5.9.3
 
+  socket-server:
+    dependencies:
+      socket.io:
+        specifier: ^4.8.3
+        version: 4.8.3
+
 packages:
 
   '@alloc/quick-lru@5.2.0':
